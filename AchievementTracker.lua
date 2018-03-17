@@ -9,6 +9,7 @@ local AchievementTracker = ZO_Object:Subclass()
 
 AchievementTracker.defaults = {
   ["tracked"] = {},
+  ["showDetails"] = {},
   ["position"] = {
     ["offsetX"] = 100,
     ["offsetY"] = 100,
@@ -116,8 +117,10 @@ function AchievementTracker:FindZoneAchievements(zone, track)
     if string.find(name, zone) ~= nil or string.find(desc, zone) ~= nil then
       if track then
         self.config.tracked[id] = true
+        self.config.showDetails[id] = false
       else
         self.config.tracked[id] = nil
+        self.config.showDetails[id] = nil
       end
     end
   end
@@ -242,13 +245,13 @@ function AchievementTracker:LoadTrackedAchievements(updatedId)
   -- hide children and adjust size of the frame
   local numChildren = self.frame:GetNumChildren()
   for i = 1, numChildren do
-    local child = self.frame:GetChild(i)
-    if child then
-      local height = child:GetHeight()
-      child:SetHidden(true)
-      child:SetDimensions(0, 0)
-      self.frame:SetHeight(self.frame:GetHeight() - height)
-    end
+   local child = self.frame:GetChild(i)
+   if child then
+     local height = child:GetHeight()
+     child:SetHidden(true)
+     child:SetDimensions(0, 0)
+     self.frame:SetHeight(self.frame:GetHeight() - height)
+   end
   end
 
   -- no need to do all the stuff below if frame is hidden
@@ -266,6 +269,7 @@ function AchievementTracker:LoadTrackedAchievements(updatedId)
     if done and self.config.hideCompleted then
       continue = false
       self.config.tracked[id] = nil
+      self.config.showDetails[id] = nil
     end
 
     local max = self.config.maxTracked
@@ -313,9 +317,11 @@ function AchievementTracker:LoadTrackedAchievements(updatedId)
           SCENE_MANAGER:Show("achievements")
         elseif button == 3 then
           self.config.tracked[id] = nil
+          self.config.showDetails[id] = nil
           return self:LoadTrackedAchievements()
         elseif button == 2 then
-          achievName.showDetails = not achievName.showDetails
+          -- achievName.showDetails = not achievName.showDetails
+          self.config.showDetails[id] = not self.config.showDetails[id]
           return self:LoadTrackedAchievements()
         end
       end)
@@ -348,37 +354,89 @@ function AchievementTracker:LoadTrackedAchievements(updatedId)
       local numCriteria = GetAchievementNumCriteria(id)
       local totalCompleted = 0
       local totalRequired = 0
-      for criteria = 1, numCriteria do
-        local critDesc, critCompleted, critRequired = GetAchievementCriterion(id, criteria)
-        totalCompleted = totalCompleted + critCompleted
-        totalRequired = totalRequired + critRequired
-      end
-      if totalCompleted > 1 then
-        totalCompleted = comma_value(totalCompleted)
-      end
-      if totalRequired > 1 then
-        totalRequired = comma_value(totalRequired)
-        achievCriteria:SetText(" - " .. totalCompleted .. "/" .. totalRequired)
-      else
-        achievCriteria:SetText("")
-      end
 
-      if achievName.showDetails then
+      -- Added by Maikahn
+      -- if the option to show the detail has been selected, process the criterion data for display
+      if self.config.showDetails[id] then 
         local text = ""
+        local critDisplayed = 0
         for criteria = 1, numCriteria do
           local critDesc, critCompleted, critRequired = GetAchievementCriterion(id, criteria)
-          if criteria > 1 then text = text .. "\n" end
-          if critCompleted == critRequired then
-            text = text .. "|c2ECC40 - " .. critDesc .. "|r"
-          else
-            text = text .. " - " .. critDesc
+
+          if (critCompleted ~= critRequired) or (critCompleted == critRequired and not self.config.hideCompleted) then
+            -- If this is the second or higher, then add a line break prior to the data
+            critDisplayed = critDisplayed + 1
+            if critDisplayed > 1 then 
+              text = text .. "\n"
+            end
+
+            if critCompleted ~= critRequired then
+              -- Don't bother showing 0/1 if only one item is required and it is not complete.
+              if critRequired == 1 then
+                text = text .. " - " .. critDesc
+              else
+                text = text .. " - " .. critDesc .. " : " .. critCompleted .. "/" .. critRequired 
+              end
+            -- if the criterion is complete, but the settings are set to display, show it in the list
+            else
+              text = text .. "|c2ECC40 - " .. critDesc .. "|r"
+            end
           end
         end
         achievCriteria:SetText(text)
+        achievCriteria:SetHeight(achievCriteria:GetTextHeight() * numCriteria)
+
+      -- If we are just showing the overall total, then get the total of all criterion.
+      else
+        for criteria = 1, numCriteria do
+          local critDesc, critCompleted, critRequired = GetAchievementCriterion(id, criteria)
+          totalCompleted = totalCompleted + critCompleted
+          totalRequired = totalRequired + critRequired
+        end
+        if totalCompleted > 1 then
+          totalCompleted = comma_value(totalCompleted)
+        end
+        if totalRequired > 1 then
+          totalRequired = comma_value(totalRequired)
+          achievCriteria:SetText(" - " .. totalCompleted .. "/" .. totalRequired)
+        else
+          achievCriteria:SetText("")
+        end
       end
 
       -- add the total height of this achiev so the next one gets positioned correctly. plus a 10px padding
-      lastTotalHeight = lastTotalHeight + achievName:GetTextHeight() + achievDesc:GetTextHeight() + math.max(achievCriteria:GetHeight(), achievCriteria:GetTextHeight()) + 10
+      lastTotalHeight = lastTotalHeight + achievName:GetTextHeight() + achievDesc:GetTextHeight() + achievCriteria:GetTextHeight() + 10
+
+     -- for criteria = 1, numCriteria do
+     --   local critDesc, critCompleted, critRequired = GetAchievementCriterion(id, criteria)
+     --   totalCompleted = totalCompleted + critCompleted
+     --   totalRequired = totalRequired + critRequired
+     -- end
+     -- if totalCompleted > 1 then
+     --   totalCompleted = comma_value(totalCompleted)
+     -- end
+     -- if totalRequired > 1 then
+     --   totalRequired = comma_value(totalRequired)
+     --   achievCriteria:SetText(" - " .. totalCompleted .. "/" .. totalRequired)
+     -- else
+     --   achievCriteria:SetText("")
+     -- end
+
+     -- if achievName.showDetails then
+     --   local text = ""
+     --   for criteria = 1, numCriteria do
+     --     local critDesc, critCompleted, critRequired = GetAchievementCriterion(id, criteria)
+     --     if criteria > 1 then text = text .. "\n" end
+     --     if critCompleted == critRequired then
+     --       text = text .. "|c2ECC40 - " .. critDesc .. "|r"
+     --     else
+     --       text = text .. " - " .. critDesc
+     --     end
+     --   end
+     --   achievCriteria:SetText(text)
+     -- end
+     -- add the total height of this achiev so the next one gets positioned correctly. plus a 10px padding
+     -- lastTotalHeight = lastTotalHeight + achievName:GetTextHeight() + achievDesc:GetTextHeight() + math.max(achievCriteria:GetHeight(), achievCriteria:GetTextHeight()) + 10
 
       i = i + 1
     end
@@ -437,8 +495,10 @@ function AchievementTracker:ToggleTracked()
 
   if self.config.tracked[id] then
     self.config.tracked[id] = nil
+    self.config.showDetails[id] = nil
   else
     self.config.tracked[id] = true
+    -- self.config.showDetails[id] = false
   end
 
   self:LoadTrackedAchievements()
@@ -455,6 +515,7 @@ end
 function AchievementTracker:Reset()
   for id, isTracked in pairs(self.config.tracked) do
     self.config.tracked[id] = nil
+    self.config.showDetails[id] = nil
   end
 
   self:LoadTrackedAchievements()
