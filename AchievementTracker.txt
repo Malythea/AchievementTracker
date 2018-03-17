@@ -1,0 +1,11 @@
+## Title: AchievementTracker
+## Author: Biki
+## Version: 1.6
+## APIVersion: 100003
+## SavedVariables: AchievementTrackerSavedVars
+
+libs\LibStub\LibStub.lua
+libs\LibAddonMenu-1.0\LibAddonMenu-1.0.lua
+
+AchievementTracker.lua
+Bindings.xml

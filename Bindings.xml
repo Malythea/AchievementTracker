@@ -1,0 +1,12 @@
+<Bindings>
+	<Layer name="General">
+		<Category name="Achievement Tracker">
+			<Action name="TOGGLE_ACHIEVEMENT_TRACKER">
+				<Down>AchievementTracker_ToggleWindow()</Down>
+			</Action>
+			<Action name="TOGGLE_ACHIEVEMENT_NOTIFICATIONS">
+				<Down>AchievementTracker_ToggleNotifications()</Down>
+			</Action>
+		</Category>
+	</Layer>
+</Bindings>
