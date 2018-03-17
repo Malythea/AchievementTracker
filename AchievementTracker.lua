@@ -406,6 +406,7 @@ function AchievementTracker:LoadTrackedAchievements(updatedId)
 
       -- add the total height of this achiev so the next one gets positioned correctly. plus a 10px padding
       lastTotalHeight = lastTotalHeight + achievName:GetTextHeight() + achievDesc:GetTextHeight() + achievCriteria:GetTextHeight() + 10
+      -- End by Maikahn
 
      -- for criteria = 1, numCriteria do
      --   local critDesc, critCompleted, critRequired = GetAchievementCriterion(id, criteria)
